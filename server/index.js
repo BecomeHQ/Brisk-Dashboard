@@ -6,11 +6,8 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 1099;
 
-app.use(
-  cors({
-    origin: [process.env.FRONTEND_URL],
-  })
-);
+app.use(cors());
+
 app.use(express.json());
 
 mongoose
