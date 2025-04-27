@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 999;
 
 app.use(
   cors({
@@ -52,7 +52,89 @@ const leaveSchema = new mongoose.Schema(
 
 const Leave = mongoose.model("Leave", leaveSchema, "leaves");
 
+const totalLeaves = {
+  sickLeave: 12,
+  casualLeave: 6,
+  burnout: 6,
+  mensuralLeaves: 18,
+  unpaidLeave: 20,
+  internshipLeave: 10,
+  wfhLeave: 10,
+  bereavementLeave: 5,
+  maternityLeave: 13,
+  paternityLeave: 20,
+  restrictedHoliday: 6,
+};
+
 // API Routes
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    const leaves = await Leave.find({ status: "Approved" });
+
+    // Create a map of user leaves
+    const userLeavesMap = leaves.reduce((acc, leave) => {
+      if (!acc[leave.user]) {
+        acc[leave.user] = {};
+      }
+      if (!acc[leave.user][leave.leaveType]) {
+        acc[leave.user][leave.leaveType] = 0;
+      }
+      // Count each day in the leave period
+      acc[leave.user][leave.leaveType] += leave.dates.length;
+      return acc;
+    }, {});
+
+    // Calculate remaining leaves for each user based on their current balances
+    const usersWithRemainingLeaves = users.map((user) => {
+      const usedLeaves = userLeavesMap[user.slackId] || {};
+      const currentBalances = {
+        sickLeave: user.sickLeave || 0,
+        casualLeave: user.casualLeave || 0,
+        burnout: user.burnout || 0,
+        mensuralLeaves: user.mensuralLeaves || 0,
+        unpaidLeave: user.unpaidLeave || 0,
+        internshipLeave: user.internshipLeave || 0,
+        wfhLeave: user.wfhLeave || 0,
+        bereavementLeave: user.bereavementLeave || 0,
+        maternityLeave: user.maternityLeave || 0,
+        paternityLeave: user.paternityLeave || 0,
+        restrictedHoliday: user.restrictedHoliday || 0,
+      };
+
+      return {
+        ...user.toObject(),
+        currentBalances,
+        remainingLeaves: {
+          sickLeave: totalLeaves.sickLeave - currentBalances.sickLeave,
+          casualLeave: totalLeaves.casualLeave - currentBalances.casualLeave,
+          burnout: totalLeaves.burnout - currentBalances.burnout,
+          mensuralLeaves:
+            totalLeaves.mensuralLeaves - currentBalances.mensuralLeaves,
+          unpaidLeave: totalLeaves.unpaidLeave - currentBalances.unpaidLeave,
+          internshipLeave:
+            totalLeaves.internshipLeave - currentBalances.internshipLeave,
+          wfhLeave: totalLeaves.wfhLeave - currentBalances.wfhLeave,
+          bereavementLeave:
+            totalLeaves.bereavementLeave - currentBalances.bereavementLeave,
+          maternityLeave:
+            totalLeaves.maternityLeave - currentBalances.maternityLeave,
+          paternityLeave:
+            totalLeaves.paternityLeave - currentBalances.paternityLeave,
+          restrictedHoliday:
+            totalLeaves.restrictedHoliday - currentBalances.restrictedHoliday,
+        },
+        totalLeaves,
+        usedLeaves,
+      };
+    });
+
+    res.json(usersWithRemainingLeaves);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.get("/api/leaves", async (req, res) => {
   try {
     const leaves = await Leave.find();
