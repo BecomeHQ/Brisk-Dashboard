@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: leave-management-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: PORT
+        value: 10000
