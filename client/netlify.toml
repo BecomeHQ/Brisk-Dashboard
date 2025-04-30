@@ -1,9 +1,10 @@
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "dist"
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://your-backend-url.com/api"
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs" 
